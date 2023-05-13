@@ -27,14 +27,9 @@ io.on("connection", (socket) => {
 
   socket.on("join", ({ name }, callBack) => {
     socket.join(`room.${roomId}`);
-
-    // Send a message to all clients in the new room
-    socket.to(`room.${roomId}`).emit('message', { user: name, text: `${name} has joined! ${roomId}` });
-
     socket.broadcast
       .to(`room.${roomId}`)
       .emit("message", { user: name, text: `${name} has joined! ${roomId}` });
-
   });
 
   // Handle message event
