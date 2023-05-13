@@ -6,6 +6,7 @@ const dotenv = require("dotenv");
 
 dotenv.config();
 
+
 const app = express();
 const httpServer = http.createServer(app);
 const io = socketIO(httpServer, {
@@ -19,31 +20,30 @@ app.use(cors());
 const { addUser } = require("./user");
 
 // Handle socket connection event
+
 io.on("connection", (socket) => {
   console.log("User connected");
+  const roomId = socket.handshake.query.uuid;
 
-  socket.on("join", ({ name, room }, callBack) => {
-    const { user, error } = addUser({ id: socket.id, name, room });
-    if (error) return callBack(error);
+  socket.on("join", ({ name }, callBack) => {
+    socket.join(`room.${roomId}`);
 
-    socket.join(user.room);
-    socket.emit("message", {
-      user: name,
-      text: `Welocome to ${user.room}`,
-    });
+    // Send a message to all clients in the new room
+    socket.to(`room.${roomId}`).emit('message', { user: name, text: `${name} has joined! ${roomId}` });
 
     socket.broadcast
-      .to(user.room)
-      .emit("message", { user: "Admin", text: `${user.name} has joined!` });
+      .to(`room.${roomId}`)
+      .emit("message", { user: name, text: `${name} has joined! ${roomId}` });
 
   });
 
   // Handle message event
   socket.on("message", (data) => {
-    console.log(`Message received: ${data}`);
+    console.log(`Message received: ${JSON.stringify(data)}`);
 
     // Broadcast message to all clients except sender
-    socket.broadcast.emit("message", data);
+    socket.broadcast
+    .to(`room.${roomId}`).emit("message", data);
   });
 
   // Handle disconnect event
