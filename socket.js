@@ -17,8 +17,6 @@ const io = socketIO(httpServer, {
 
 app.use(cors());
 
-const { addUser } = require("./user");
-
 // Handle socket connection event
 
 io.on("connection", (socket) => {
