@@ -6,8 +6,8 @@ exports.addUser = ({ id, name, room }) => {
 
   // Store user details in Redis
   const user = { id, name, room };
-  client.hmset(`user:${id}`, user);
-  client.sadd(`room:${room}:users`, id);
+  client.sAdd(`user:${id}`, user);
+  client.sAdd(`room:${room}:users`, id);
 
   return { user };
 };
