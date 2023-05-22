@@ -3,9 +3,9 @@ const http = require("http");
 const socketIO = require("socket.io");
 const cors = require("cors");
 const dotenv = require("dotenv");
+const bodyParser = require("body-parser");
 
 dotenv.config();
-
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -16,12 +16,26 @@ const io = socketIO(httpServer, {
 });
 
 app.use(cors());
-
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
 // Handle socket connection event
 
+app.post("/send-message", (req, res) => {
+  const { uuid: roomId, name } = req.body;
+  io.to(`room.${roomId}`).emit("message", {
+    status: 'true',
+    user: name,
+    text: `${name} has joined! ${roomId}`,
+  });
+
+  res.status(200).send({
+    message: "Successfully send data",
+  });
+});
+
 io.on("connection", (socket) => {
-  console.log("User connected");
-  const roomId = socket.handshake.query.uuid;
+  const { uuid: roomId, role } = socket.handshake.query;
+  console.log(`User ${role} connected ${roomId}`);
 
   socket.on("join", ({ name }, callBack) => {
     socket.join(`room.${roomId}`);
@@ -35,8 +49,7 @@ io.on("connection", (socket) => {
     console.log(`Message received: ${JSON.stringify(data)}`);
 
     // Broadcast message to all clients except sender
-    socket.broadcast
-    .to(`room.${roomId}`).emit("message", data);
+    socket.broadcast.to(`room.${roomId}`).emit("message", data);
   });
 
   // Handle disconnect event
@@ -46,7 +59,7 @@ io.on("connection", (socket) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 8081;
+const PORT = process.env.PORT || 6001;
 
 httpServer.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);
