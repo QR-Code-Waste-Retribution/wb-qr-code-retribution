@@ -20,7 +20,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 // Handle socket connection event
 
-app.post("/send-message", (req, res) => {
+app.post("/send-message/va", (req, res) => {
   const { uuid: roomId, name } = req.body;
 
   io.socket.to(`va.${roomId}.socket`).emit("va_status", {
