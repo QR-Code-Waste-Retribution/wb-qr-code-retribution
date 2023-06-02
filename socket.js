@@ -22,10 +22,12 @@ app.use(bodyParser.urlencoded({ extended: false }));
 
 app.post("/send-message", (req, res) => {
   const { uuid: roomId, name } = req.body;
-  io.to(`room.${roomId}`).emit("message", {
-    status: 'true',
-    user: name,
-    text: `${name} has joined! ${roomId}`,
+
+  io.socket.to(`va.${roomId}.socket`).emit("va_status", {
+    status: false,
+    data: {
+      name: name,
+    },
   });
 
   res.status(200).send({
@@ -37,11 +39,25 @@ io.on("connection", (socket) => {
   const { uuid: roomId, role } = socket.handshake.query;
   console.log(`User ${role} connected ${roomId}`);
 
-  socket.on("join", ({ name }, callBack) => {
+  socket.on("join", ({ name }, _callBack) => {
     socket.join(`room.${roomId}`);
     socket.broadcast
       .to(`room.${roomId}`)
       .emit("message", { user: name, text: `${name} has joined! ${roomId}` });
+  });
+
+  socket.on("payment_va", ({ name }, _callBack) => {
+    socket.join(`va.${roomId}.socket`);
+    socket.broadcast
+      .to(`va.${roomId}.socket`)
+      .emit("va_status", { status: false, data: [] });
+  });
+
+  socket.on("va_status", (data) => {
+    console.log(`VA status received: ${JSON.stringify(data)}`);
+
+    // Broadcast message to all clients except sender
+    socket.broadcast.to(`va.${roomId}.socket`).emit("va_status", data);
   });
 
   // Handle message event
