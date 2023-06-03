@@ -23,10 +23,10 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.post("/send-message/va", (req, res) => {
   const { uuid: roomId, name } = req.body;
 
-  io.socket.to(`va.${roomId}.socket`).emit("va_status", {
-    status: false,
+  io.to(`va.${roomId}.socket`).emit("va_status", {
+    status: true,
     data: {
-      name: name,
+      message: name,
     },
   });
 
@@ -37,6 +37,7 @@ app.post("/send-message/va", (req, res) => {
 
 io.on("connection", (socket) => {
   const { uuid: roomId, role } = socket.handshake.query;
+  
   console.log(`User ${role} connected ${roomId}`);
 
   socket.on("join", ({ name }, _callBack) => {
