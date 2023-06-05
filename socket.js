@@ -37,7 +37,7 @@ app.post("/send-message/va", (req, res) => {
 
 io.on("connection", (socket) => {
   const { uuid: roomId, role } = socket.handshake.query;
-  
+
   console.log(`User ${role} connected ${roomId}`);
 
   socket.on("join", ({ name }, _callBack) => {
