@@ -20,6 +20,12 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 // Handle socket connection event
 
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Welcome to WB QR Retribution'
+  })
+})
+
 app.post("/send-message/va", (req, res) => {
   const { uuid: roomId, name } = req.body;
 
