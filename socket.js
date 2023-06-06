@@ -21,8 +21,9 @@ app.use(bodyParser.urlencoded({ extended: false }));
 // Handle socket connection event
 
 app.get('/', (req, res) => {
+  print("It Works!!")
   res.json({
-    message: 'Welcome to WB QR Retribution'
+    message: 'Welcome to WB QR Retribution\n'
   })
 })
 
