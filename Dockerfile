@@ -1,5 +1,5 @@
 # Use an official Node.js runtime as the base image with version 16.15.0
-FROM node:16.20.0-alpine
+FROM node:16.20.0-alpine as websocket
 
 # Set the working directory in the container
 WORKDIR /app
@@ -14,7 +14,7 @@ RUN npm install
 COPY . .
 
 # Expose the port that the WebSocket server will listen on
-EXPOSE 3000
+EXPOSE 8010
 
 # Define the command to run the WebSocket server when the container starts
-CMD [ "node", "server.js" ]
+CMD [ "node", "socket.js" ]
