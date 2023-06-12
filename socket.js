@@ -3,7 +3,7 @@ const http = require("http");
 const socketIO = require("socket.io");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const redis = require("redis");
+const bodyParser = require("body-parser");
 
 dotenv.config();
 
@@ -16,56 +16,64 @@ const io = socketIO(httpServer, {
 });
 
 app.use(cors());
-
-const { addUser } = require("./user");
-
-const client = redis.createClient();
-
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
 // Handle socket connection event
+
+app.get('/', (req, res) => {
+  console.log("It Works!!")
+  res.json({
+    message: 'Welcome to WB QR Retribution\n'
+  })
+})
+
+app.post("/send-message/va", (req, res) => {
+  const { uuid: roomId, name } = req.body;
+
+  io.to(`va.${roomId}.socket`).emit("va_status", {
+    status: true,
+    data: {
+      message: name,
+    },
+  });
+
+  res.status(200).send({
+    message: "Successfully send data",
+  });
+});
+
 io.on("connection", (socket) => {
-  console.log("User connected");
+  const { uuid: roomId, role } = socket.handshake.query;
 
-  socket.on("join", ({ name, room }, callBack) => {
-    // Add user to Redis
-    const { user, error } = addUser({ id: socket.id, name, room });
-    if (error) return callBack(error);
+  console.log(`User ${role} connected ${roomId}`);
 
-    socket.join(user.room);
-    socket.emit("message", {
-      user: name,
-      text: `Welcome to ${user.room}`,
-    });
-
-    // Retrieve all users in the room from Redis
-    client.keys(`user:*:room:${user.room}`, (err, keys) => {
-      if (err) {
-        console.log(err);
-        return;
-      }
-
-      // Retrieve user details for each key
-      client.mget(keys, (err, users) => {
-        if (err) {
-          console.log(err);
-          return;
-        }
-
-        // Emit the list of users to all clients in the room
-        io.to(user.room).emit("users", JSON.parse(`[${users}]`));
-      });
-    });
-
+  socket.on("join", ({ name }, _callBack) => {
+    socket.join(`room.${roomId}`);
     socket.broadcast
-      .to(user.room)
-      .emit("message", { user: "Admin", text: `${user.name} has joined!` });
+      .to(`room.${roomId}`)
+      .emit("message", { user: name, text: `${name} has joined! ${roomId}` });
+  });
+
+  socket.on("payment_va", ({ name }, _callBack) => {
+    socket.join(`va.${roomId}.socket`);
+    socket.broadcast
+      .to(`va.${roomId}.socket`)
+      .emit("va_status", { status: false, data: [] });
+  });
+
+  socket.on("va_status", (data) => {
+    console.log(`VA status received: ${JSON.stringify(data)}`);
+
+    // Broadcast message to all clients except sender
+    socket.broadcast.to(`va.${roomId}.socket`).emit("va_status", data);
   });
 
   // Handle message event
   socket.on("message", (data) => {
-    console.log(`Message received: ${data}`);
+    console.log(`Message received: ${JSON.stringify(data)}`);
 
     // Broadcast message to all clients except sender
-    socket.broadcast.emit("message", data);
+    socket.broadcast.to(`room.${roomId}`).emit("message", data);
   });
 
   // Handle disconnect event
@@ -75,8 +83,8 @@ io.on("connection", (socket) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 8081;
+const PORT = process.env.PORT || 8010;
 
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`Server started on port ${PORT}`);
 });
